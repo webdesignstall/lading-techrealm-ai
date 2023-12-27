@@ -1,0 +1,123 @@
+---
+import { Picture } from "astro:assets";
+import heroImage from "assets/hero.png";
+import Link from "@components/ui/link.astro";
+import { Icon } from "astro-icon";
+---
+
+<main
+  class="grid lg:grid-cols-2 place-items-center pt-16 pb-8 md:pt-12 md:pb-24">
+  <div class="py-6 md:order-1 hidden md:block">
+    <Picture
+      src={heroImage}
+      alt="Astronaut in the air"
+      widths={[200, 400, 600]}
+      sizes="(max-width: 800px) 100vw, 620px"
+      loading="eager"
+      format="avif"
+    />
+  </div>
+  <div>
+    <h1
+      class="text-5xl lg:text-6xl xl:text-7xl font-bold lg:tracking-tight xl:tracking-tighter">
+      Marketing website done with Astro
+    </h1>
+    <p class="text-lg mt-4 text-slate-600 max-w-xl">
+      Astroship is a starter template for startups, marketing websites & landing
+      pages.<wbr /> Built with Astro.build and TailwindCSS. You can quickly
+      create any website with this starter.
+    </p>
+    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+      <div class="flex">
+        <form
+          id="form"
+          method="post"
+          class="w-full  space-y-4"
+          action="">
+          <input
+            name="projectName"
+            placeholder="Project Name"
+            class="p-3 border w-full rounded-md"
+            type="text"
+          />
+          <textarea
+            name="prompt"
+            placeholder="Project description"
+            class="p-3 border w-full rounded-md"
+            rows="3"
+          />
+          <select
+            name="projectType"
+            class="border p-3 bg-white w-full rounded-md"
+            title="Select your type"
+            id="">
+            <option class="bg-white text-gray-700 px-8" value="ecommerce">Ecommerce</option>
+            <option class="bg-white text-gray-700 px-8" value="landingPage">landingPage</option>
+            <option class="bg-white text-gray-700 px-8" value="softwareasaservicepage"
+              >Software as a service page</option
+            >
+          </select>
+          <button
+            class="bg-black px-6 py-4 block text-white cursor-pointer hover:bg-gray-800 border-none rounded-lg"
+            type="submit">Generate Now</button
+          >
+        </form>
+      </div>
+    </div>
+    <div id="result"></div>
+  </div>
+</main>
+
+<script is:inline>
+  const form = document.getElementById("form");
+  const result = document.getElementById("result");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    form.classList.add("was-validated");
+    if (!form.checkValidity()) {
+      form.querySelectorAll(":invalid")[0].focus();
+      return;
+    }
+    const formData = new FormData(form);
+    const object = Object.fromEntries(formData);
+    const json = JSON.stringify(object);
+
+    result.innerHTML = "Sending...";
+
+    fetch("http://localhost:8000/api/v1/projects", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: json,
+    })
+      .then(async (response) => {
+        let json = await response.json();
+        if (response.status == 200) {
+          const storedIds =
+            JSON.parse(window.localStorage.getItem("projectIds") ?? "[]") || [];
+          storedIds.push(json?.data?._id);
+          result.classList.add("text-green-500");
+          result.innerHTML = json.message;
+          window.location.href = `http://localhost:3000/project/${json?.data?.link}?param=${true}`;
+        } else {
+          console.log(response);
+          result.classList.add("text-red-500");
+          result.innerHTML = json.message;
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        result.innerHTML = "Something went wrong!";
+      })
+      .then(function () {
+        form.reset();
+        form.classList.remove("was-validated");
+        setTimeout(() => {
+          result.style.display = "none";
+        }, 5000);
+      });
+  });
+</script>
